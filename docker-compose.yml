@@ -1,0 +1,172 @@
+
+# eve 微服务, 不向外部暴露接口, 只在网段内调用
+services:
+  evesystem:
+    build:
+      context: ./eveSystem
+      dockerfile: Dockerfile
+
+    container_name: eve-system
+
+    restart: always
+
+    depends_on:
+      nacos:
+        condition: service_healthy
+
+    networks:
+      - dog-net
+
+# 网关 微服务, 向外部暴露接口, 在网段内调用其他微服务
+  gatewaysystem:
+    build:
+      context: ./gatewaySystem
+      dockerfile: Dockerfile
+
+    container_name: gateway-system
+
+    restart: always
+
+    depends_on:
+      nacos:
+        condition: service_healthy
+
+    networks:
+      - dog-net
+
+# 用户 微服务, 不向外部暴露接口, 只在网段内调用
+  usersystem:
+    build:
+      context: ./userSystem
+      dockerfile: Dockerfile
+
+    container_name: user-system
+
+    restart: always
+
+    depends_on:
+      nacos:
+        condition: service_healthy
+
+    networks:
+      - dog-net
+
+  # pg 数据库
+  postgres:
+    image: postgres:15
+
+    container_name: postgres
+
+    restart: always
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: dog
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+
+    networks:
+      - dog-net
+
+  # Nacos
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+
+    container_name: nacos
+
+    environment:
+      - MODE=standalone
+      - JVM_XMS=256m
+      - JVM_XMX=256m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+
+    networks:
+      - dog-net
+
+    restart: always
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Redis
+  redis:
+    image: redis:7
+
+    container_name: redis
+
+    command: redis-server --requirepass 123456
+
+    networks:
+      - dog-net
+
+    restart: always
+
+  # RocketMQ
+  rocketmq-namesrv:
+    image: apache/rocketmq:4.9.6
+    container_name: rocketmq-namesrv
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+    networks:
+      - dog-net
+    restart: always
+
+    environment:
+      - JAVA_OPT_EXT=-Xms256m -Xmx256m
+
+  rocketmq-broker:
+    image: apache/rocketmq:4.9.6
+    container_name: rocketmq-broker
+    command: sh mqbroker -n rocketmq-namesrv:9876
+    environment:
+      - NAMESRV_ADDR=rocketmq-namesrv:9876
+      - JAVA_OPTS=-server -Xms256m -Xmx256m -Xmn128m
+    ports:
+      - "10911:10911"
+      - "10909:10909"
+    depends_on:
+      - rocketmq-namesrv
+    networks:
+      - dog-net
+    restart: always
+
+  #nginx
+  nginx:
+    image: nginx:stable-alpine
+
+    container_name: nginx
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/html:/usr/share/nginx/html
+      - ./nginx/access.log:/var/log/nginx/access.log
+      - ./nginx/error.log:/var/log/nginx/error.log
+
+    depends_on:
+      - gatewaysystem
+
+    networks:
+      - dog-net
+
+    restart: always
+
+# 网段声明
+networks:
+  dog-net:
+    driver: bridge
