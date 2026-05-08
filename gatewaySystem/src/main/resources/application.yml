@@ -5,7 +5,13 @@ spring:
   application:
     name: gatewaySystem
 
-    # Nacos
+  # 环境配置
+  profiles:
+    active: dev
+    # active: test
+    # active: prod
+
+  # Nacos
   cloud:
     nacos:
       discovery:
@@ -23,13 +29,13 @@ spring:
       routes:
         # 用户微服务
         - id: user-system
-          uri: http://user-system:8080   # lb = 负载均衡
+          uri: lb://user-system  # lb = 负载均衡
           predicates:
             - Path=/auth/**
 
           # eve 微服务
         - id: eve-system
-          uri: http://eve-system:8080
+          uri: lb://eve-system
           predicates:
             - Path=/eve/**
 
@@ -44,19 +50,6 @@ spring:
               - PUT
               - DELETE
             allowedHeaders: "*"
-
-  # Redis 配置
-  data:
-    redis:
-      host: redis
-      port: 6379
-      password: 123456
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
 
 # RocketMQ 配置
 rocketmq:

@@ -32,14 +32,14 @@ public class UserController {
 
     // 登出接口
     @PostMapping("logout")
-    public ResponseEntity<Result<Void>> logoutUser(@RequestHeader("Authorization") String token, @RequestHeader("RefreshToken")  String refreshToken) {
-        return userService.logoutUser(token, refreshToken);
+    public ResponseEntity<Result<Void>> logoutUser(@RequestHeader("userId") Long userId) {
+        return userService.logoutUser(userId);
     }
 
     // Token 刷新
     @PutMapping("/refresh")
-    public ResponseEntity<Result<JwtTokenResp>> refreshToken(@RequestHeader("Authorization") String token) {
-        return  userService.refreshToken(token);
+    public ResponseEntity<Result<JwtTokenResp>> refreshToken(@RequestHeader("userId") Long userId, @RequestHeader("Authorization") String token) {
+        return  userService.refreshToken(userId, token);
     }
 
 

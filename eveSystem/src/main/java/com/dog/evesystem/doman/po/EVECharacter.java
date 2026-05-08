@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("eve_character")
 public class EVECharacter {
-    @TableId(type = type = IdType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long characterId;
 
     @TableField("user_id")

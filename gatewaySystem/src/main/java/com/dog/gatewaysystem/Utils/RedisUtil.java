@@ -57,4 +57,32 @@ public class RedisUtil {
     public Boolean isBlackList(String token) {
         return redisTemplate.opsForValue().get("token_black_list" + token) != null;
     }
+
+    // 用户名加入黑名单
+    public void setUserBlackList(String username, long expireSeconds) {
+        redisTemplate.opsForValue().increment("username_black_list" + username, 1);
+        redisTemplate.expire("username_black_list" + username, expireSeconds, TimeUnit.SECONDS);
+    }
+
+    // 查询用户名黑名单
+    public int isUsernameBlackList(String username) {
+        Integer count = (Integer) redisTemplate.opsForValue().get("username_black_list" + username);
+
+        return count == null ? 0 : count;
+    }
+
+    // 在黑名单删除用户名
+    public void deleteUsernameBlackList(String username) {
+        redisTemplate.delete(username);
+    }
+
+    // 查询重复提交黑名单
+    public Boolean isDuplicateBlackList(String path, Long userId) {
+        return redisTemplate.opsForValue().get("duplicate_black_list" + path + userId) != null;
+    }
+
+    // 查询重复提交黑名单
+    public Boolean isDuplicateBlackList(String path, String username) {
+        return redisTemplate.opsForValue().get("duplicate_black_list" + path + username) != null;
+    }
 }

@@ -49,13 +49,31 @@ public class RedisUtil {
         redisTemplate.delete(key);
     }
 
-    // token 加黑名单
+    // token 加 token 黑名单
     public void setBlackList(String token, long expireSeconds) {
         redisTemplate.opsForValue().set("token_black_list" + token, "1", expireSeconds, TimeUnit.SECONDS );
     }
 
-    // 在黑名单否
+    // 在 token 黑名单否
     public Boolean isBlackList(String token) {
         return redisTemplate.opsForValue().get("token_black_list" + token) != null;
+    }
+
+    // 用户名加入黑名单
+    public void setUserBlackList(String username, long expireSeconds) {
+        redisTemplate.opsForValue().increment("username_black_list" + username, 1);
+        redisTemplate.expire("username_black_list" + username, expireSeconds, TimeUnit.SECONDS);
+    }
+
+    // 查询用户名黑名单
+    public Long isUsernameBlackList(String username) {
+        Long count = (Long) redisTemplate.opsForValue().get("username_black_list" + username);
+
+        return count == null ? 0 : count;
+    }
+
+    // 在黑名单删除用户名
+    public void deleteUsernameBlackList(String username) {
+        redisTemplate.delete("username_black_list" + username);
     }
 }

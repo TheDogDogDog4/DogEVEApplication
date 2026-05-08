@@ -10,6 +10,6 @@ import org.springframework.http.ResponseEntity;
 public interface UserService {
     ResponseEntity<Result<Void>> registerUser(UserRegisterReq userRegisterReq);
     ResponseEntity<Result<JwtTokenResp>> loginUser(UserLoginReq userLoginReq);
-    ResponseEntity<Result<Void>> logoutUser(String token, String refreshToken);
-    ResponseEntity<Result<JwtTokenResp>> refreshToken(String token);
+    ResponseEntity<Result<Void>> logoutUser(Long userId);
+    ResponseEntity<Result<JwtTokenResp>> refreshToken(Long userId, String refreshToken);
 }

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 // MybatisPlus 连接数据库的表名
 @TableName("users")
 public class User {
-    @TableId(type = IdType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long userId;
 
     @TableField("username")

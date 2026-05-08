@@ -31,9 +31,4 @@ public class RedisConfig {
         return redisTemplate;
     }
 
-    @Bean
-    public RedisScript<Long> redisScript() {
-        Resource script = new ClassPathResource("lua/TokenBucketLua.lua");
-        return RedisScript.of(script, Long.class);
-    }
 }

@@ -19,6 +19,7 @@
         <module>userSystem</module>
         <module>eveSystem</module>
         <module>gatewaySystem</module>
+        <module>common</module>
     </modules>
 
     <groupId>com.Dog</groupId>
@@ -36,6 +37,7 @@
         <mybatis-plus.version>3.5.11</mybatis-plus.version>
         <jwt.version>3.18.1</jwt.version>
         <rocketmq.version>2.2.2</rocketmq.version>
+        <slf4j-version>1.7.36</slf4j-version>
         <spring-boot-maven-plugin.version>3.3.4</spring-boot-maven-plugin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <encoding>UTF-8</encoding>
@@ -95,6 +97,7 @@
                 <artifactId>rocketmq-spring-boot-starter</artifactId>
                 <version>${rocketmq.version}</version>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 

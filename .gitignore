@@ -1,33 +1,65 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# --------------------------
+# 1. 编译输出（Maven/Gradle）
+# --------------------------
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+**/target/
+**/build/
+**/out/
+**/bin/
+pom.xml.*
+dependency-reduced-pom.xml
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# --------------------------
+# 2. IDE 配置（IDEA/VS Code）
+# --------------------------
+
+.idea/
 *.iml
 *.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+*.iws
 .vscode/
+*.suo
+*.user
+*.workspace
+
+# --------------------------
+# 3. 日志/临时文件
+# --------------------------
+
+**/logs/
+**/log/
+*.log
+*.trace
+*.out
+*.tmp
+*.temp
+
+# --------------------------
+# 4. 敏感配置（最重要！）
+# --------------------------
+
+application-dev.yml
+application-text.yml
+application-prod.yml
+
+# --------------------------
+# 5. 操作系统文件
+# --------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# --------------------------
+# 6. Docker/容器相关
+# --------------------------
+**/.docker/
+**/docker/*.env
+*.dockerignore
+
+# --------------------------
+# 7. 其他
+# --------------------------
+*.class
+*.jar
+*.war
+*.ear
