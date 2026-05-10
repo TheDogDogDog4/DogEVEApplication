@@ -96,6 +96,6 @@ public class TokenVerifyFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -100;
+        return -90;
     }
 }

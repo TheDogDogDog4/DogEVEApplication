@@ -86,6 +86,6 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -50;
+        return -40;
     }
 }

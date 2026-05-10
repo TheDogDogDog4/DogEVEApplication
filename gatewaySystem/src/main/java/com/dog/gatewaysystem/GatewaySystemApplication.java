@@ -8,7 +8,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "com.dog.gatewaysystem",
-        "com.dog.common"
+        "com.Dog"
 })
 @EnableDiscoveryClient
 public class GatewaySystemApplication {

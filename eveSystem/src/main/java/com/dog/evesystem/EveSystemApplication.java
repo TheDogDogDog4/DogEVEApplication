@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "com.dog.evesystem",
-        "com.dog.common"
+        "com.Dog"
 })
 @EnableDiscoveryClient
 @EnableFeignClients

@@ -10,6 +10,9 @@ services:
 
     restart: always
 
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+
     depends_on:
       nacos:
         condition: service_healthy
@@ -27,6 +30,9 @@ services:
 
     restart: always
 
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+
     depends_on:
       nacos:
         condition: service_healthy
@@ -43,6 +49,9 @@ services:
     container_name: user-system
 
     restart: always
+
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
 
     depends_on:
       nacos:
