@@ -1,4 +1,4 @@
-package com.dog.usersystem.doman.po;
+package com.dog.usersystem.doman.dto;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

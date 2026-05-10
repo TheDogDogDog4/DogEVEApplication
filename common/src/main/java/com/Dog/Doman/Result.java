@@ -1,4 +1,4 @@
-package com.dog.usersystem.doman;
+package com.Dog.Doman;
 
 import lombok.Data;
 
@@ -10,14 +10,14 @@ public class Result<T> {
     private T data;
 
     // 成功
-    public static  <T> Result<T> success(){
+    public static <T> Result<T> success(){
         Result<T> result=new Result<T>();
         result.setCode(200);
         result.setMsg("success");
         return result;
     }
 
-    public static  <T> Result<T> success(T data){
+    public static <T> Result<T> success(T data){
         Result<T> result=new Result<T>();
         result.setCode(200);
         result.setMsg("success");
@@ -25,14 +25,14 @@ public class Result<T> {
         return result;
     }
 
-    public static  <T> Result<T> success(String msg){
+    public static <T> Result<T> success(String msg){
         Result<T> result=new Result<T>();
         result.setCode(200);
         result.setMsg(msg);
         return result;
     }
 
-    public static  <T> Result<T> success(String msg, T data){
+    public static <T> Result<T> success(String msg, T data){
         Result<T> result=new Result<T>();
         result.setCode(200);
         result.setMsg(msg);
@@ -41,14 +41,14 @@ public class Result<T> {
     }
 
     // 失败
-    public static  <T> Result<T> error(){
+    public static <T> Result<T> error(){
         Result<T> result=new Result<T>();
         result.setCode(500);
         result.setMsg("error");
         return result;
     }
 
-    public static  <T> Result<T> error(T data){
+    public static <T> Result<T> error(T data){
         Result<T> result=new Result<T>();
         result.setCode(500);
         result.setMsg("error");
@@ -56,14 +56,14 @@ public class Result<T> {
         return result;
     }
 
-    public static  <T> Result<T> error(String msg){
+    public static <T> Result<T> error(String msg){
         Result<T> result=new Result<T>();
         result.setCode(500);
         result.setMsg(msg);
         return result;
     }
 
-    public static  <T> Result<T> error(String msg, T data){
+    public static <T> Result<T> error(String msg, T data){
         Result<T> result=new Result<T>();
         result.setCode(500);
         result.setMsg(msg);
@@ -71,7 +71,21 @@ public class Result<T> {
         return result;
     }
 
-    public static  <T> Result<T> error(int code, String msg,  T data){
+    public static <T> Result<T> error(int code, T data){
+        Result<T> result=new Result<T>();
+        result.setCode(code);
+        result.setData(data);
+        return result;
+    }
+
+    public static <T> Result<T> error(int code, String msg){
+        Result<T> result=new Result<T>();
+        result.setCode(code);
+        result.setMsg(msg);
+        return result;
+    }
+
+    public static <T> Result<T> error(int code, String msg,  T data){
         Result<T> result=new Result<T>();
         result.setCode(code);
         result.setMsg(msg);

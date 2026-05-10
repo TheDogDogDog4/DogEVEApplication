@@ -1,6 +1,6 @@
 package com.dog.gatewaysystem.Filter;
 
-import com.dog.gatewaysystem.Utils.RedisUtil;
+import com.Dog.Utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;

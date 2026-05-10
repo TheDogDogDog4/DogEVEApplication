@@ -1,6 +1,6 @@
 package com.dog.usersystem.controller;
 
-import com.dog.usersystem.doman.Result;
+import com.Dog.Doman.Result;
 import com.dog.usersystem.doman.vo.req.UserLoginReq;
 import com.dog.usersystem.doman.vo.req.UserRegisterReq;
 import com.dog.usersystem.doman.vo.resp.JwtTokenResp;
@@ -20,26 +20,26 @@ public class UserController {
 
     // 注册接口
     @PostMapping("/register")
-    public ResponseEntity<Result<Void>> registerUser(@RequestBody UserRegisterReq userRegisterReq) {
+    public Result<Void> registerUser(@RequestBody UserRegisterReq userRegisterReq) {
         return userService.registerUser(userRegisterReq);
     }
 
     // 登录接口
     @PostMapping("/login")
-    public ResponseEntity<Result<JwtTokenResp>> loginUser(@RequestBody UserLoginReq userLoginReq) {
+    public Result<JwtTokenResp> loginUser(@RequestBody UserLoginReq userLoginReq) {
         return userService.loginUser(userLoginReq);
     }
 
     // 登出接口
     @PostMapping("logout")
-    public ResponseEntity<Result<Void>> logoutUser(@RequestHeader("userId") Long userId) {
+    public Result<Void> logoutUser(@RequestHeader("userId") Long userId) {
         return userService.logoutUser(userId);
     }
 
     // Token 刷新
     @PutMapping("/refresh")
-    public ResponseEntity<Result<JwtTokenResp>> refreshToken(@RequestHeader("userId") Long userId, @RequestHeader("Authorization") String token) {
-        return  userService.refreshToken(userId, token);
+    public Result<JwtTokenResp> refreshToken(@RequestHeader("userId") Long userId) {
+        return  userService.refreshToken(userId);
     }
 
 

@@ -1,6 +1,6 @@
 package com.dog.gatewaysystem.Filter;
 
-import com.dog.gatewaysystem.Utils.RedisUtil;
+import com.Dog.Utils.RedisUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -24,9 +24,7 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
     @Resource
     private RedisUtil redisUtil;
 
-    private static final List<String> BLACK_LIST = Arrays.asList(
-            "/auth/login",
-            "/auth/register"
+    private static final List<String> WHITE_LIST = Arrays.asList(
     );
 
     @Override
@@ -36,8 +34,8 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
         String path = request.getPath().value();
         HttpMethod method = request.getMethod();
 
-        // 不在黑名单放行
-        if (!BLACK_LIST.contains(path)) {
+        // 白名单放行
+        if (WHITE_LIST.contains(path)) {
             return chain.filter(exchange);
         }
 

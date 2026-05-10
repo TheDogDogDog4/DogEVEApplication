@@ -1,4 +1,4 @@
-package com.dog.usersystem.utils;
+package com.Dog.Utils;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;

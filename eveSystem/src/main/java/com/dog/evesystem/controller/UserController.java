@@ -1,6 +1,6 @@
 package com.dog.evesystem.controller;
 
-import com.dog.evesystem.doman.Result;
+import com.Dog.Doman.Result;
 import com.dog.evesystem.doman.vo.resp.EVECharacterResp;
 import com.dog.evesystem.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,13 +28,13 @@ public class UserController {
 
     // 获取角色数据(单个)
     @GetMapping("/info")
-    public ResponseEntity<Result<EVECharacterResp>> characterInfo(@RequestHeader("userId") Long userId) {
+    public Result<EVECharacterResp> characterInfo(@RequestHeader("userId") Long userId) {
         return userService.characterInfo(userId);
     }
 
     // ESI accessToken 刷新
     @PutMapping("/refresh")
-    public ResponseEntity<Result<Void>> refreshESIToken(@RequestHeader("userId") Long userId) {
+    public Result<Void> refreshESIToken(@RequestHeader("userId") Long userId) {
         return userService.refreshESIToken(userId);
     }
 }

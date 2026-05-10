@@ -1,4 +1,4 @@
-package com.dog.evesystem.utils;
+package com.Dog.Utils;
 
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+// Rides 工具类
 @Component
 public class RedisUtil {
 
@@ -34,11 +35,6 @@ public class RedisUtil {
         redisTemplate.delete(key);
     }
 
-    // 存 Null
-    public void setNull(String key) {
-        redisTemplate.opsForValue().set(key, null);
-    }
-
     // 获取锁
     public boolean lock(String key, long expireSeconds) {
         return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(key, "lock",expireSeconds, TimeUnit.SECONDS));
@@ -49,13 +45,46 @@ public class RedisUtil {
         redisTemplate.delete(key);
     }
 
-    // token 加黑名单
+    /**
+     * 黑名单操作
+     */
+
+    // token 黑名单操作
     public void setBlackList(String token, long expireSeconds) {
         redisTemplate.opsForValue().set("token_black_list" + token, "1", expireSeconds, TimeUnit.SECONDS );
     }
 
-    // 在黑名单否
     public Boolean isBlackList(String token) {
         return redisTemplate.opsForValue().get("token_black_list" + token) != null;
+    }
+
+    // 暴力破解黑名单
+    public void setUsernameBlackList(String username, long expireSeconds) {
+        redisTemplate.opsForValue().increment("username_black_list" + username, 1);
+
+        int count = Integer.parseInt(redisTemplate.opsForValue().get("username_black_list" + username).toString());
+
+        if (count == 1) {
+            redisTemplate.expire("username_black_list" + username, expireSeconds, TimeUnit.SECONDS);
+        }
+    }
+
+    public int isUsernameBlackList(String username) {
+        Integer count = (Integer) redisTemplate.opsForValue().get("username_black_list" + username);
+
+        return count == null ? 0 : count;
+    }
+
+    public void deleteUsernameBlackList(String username) {
+        redisTemplate.delete(username);
+    }
+
+    // 重复提交黑名单
+    public Boolean isDuplicateBlackList(String path, Long userId) {
+        return redisTemplate.opsForValue().get("duplicate_black_list" + path + userId) != null;
+    }
+
+    public Boolean isDuplicateBlackList(String path, String username) {
+        return redisTemplate.opsForValue().get("duplicate_black_list" + path + username) != null;
     }
 }

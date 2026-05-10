@@ -1,4 +1,4 @@
-package com.dog.evesystem.doman.po;
+package com.dog.evesystem.doman.dto;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;

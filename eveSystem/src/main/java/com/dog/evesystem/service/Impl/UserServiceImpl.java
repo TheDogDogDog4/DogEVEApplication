@@ -1,13 +1,16 @@
 package com.dog.evesystem.service.Impl;
 
+import com.Dog.Doman.Result;
+import com.Dog.Doman.ResultEnum;
+import com.Dog.Exception.BusinessException;
+import com.Dog.Utils.RedisUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dog.evesystem.dao.EVECharacterMapper;
 import com.dog.evesystem.dao.UserMapper;
-import com.dog.evesystem.doman.Result;
-import com.dog.evesystem.doman.po.EVECharacter;
-import com.dog.evesystem.doman.po.User;
+import com.dog.evesystem.doman.dto.EVECharacter;
+import com.dog.evesystem.doman.dto.User;
 import com.dog.evesystem.doman.vo.resp.EVECharacterResp;
 import com.dog.evesystem.service.UserService;
-import com.dog.evesystem.utils.RedisUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +19,9 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.view.RedirectView;
-
 import java.util.Map;
 import java.util.UUID;
 
@@ -53,31 +56,37 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public RedirectView loginESI(Long userId) {
-        // 记录日志
-        log.info("【ESI 登录】{}", userId);
+        if (userId == null) {
+            throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
+        }
 
-        // 防 CSRF 攻击
-        String state = UUID.randomUUID().toString();
-        redisUtil.set("oauth_state:" + state, userId, 600);
+        try {
+            // 防 CSRF 攻击
+            String state = UUID.randomUUID().toString();
+            redisUtil.set("oauth_state:" + state, userId, 600);
 
-        // 发送 http 请求
-        String url = authUrl + "?response_type=code" + "&client_id=" + clientId + "&redirect_uri=" + callbackUrl + "&scope=publicData" + "&state=" + state;
-        //记录日志, 并跳转
-        log.info("调用成功, 跳转");
-        return new RedirectView(url);
+            // 发送 http 请求
+            String url = authUrl + "?response_type=code" + "&client_id=" + clientId + "&redirect_uri=" + callbackUrl + "&scope=publicData" + "&state=" + state;
+
+            return new RedirectView(url);
+        } catch (Exception e) {
+            throw new BusinessException(ResultEnum.ESI_AUTH_REDIRECT_ERROR);
+        }
     }
 
     @Override
     public ResponseEntity<?> callbackESI(String code, String state) {
-        // 记录日志
-        log.info("【callback 开始】{} {}", code, state);
+
+        Object object =  redisUtil.get("oauth_state:" + state);
+
         // 防 CSRF 攻击
-        if (redisUtil.get("oauth_state:" + state) == null) {
-            log.warn("【识别码错误】");
-            return ResponseEntity.status(500).build();
+        if (object == null) {
+            throw new BusinessException(ResultEnum.STATE_INCORRECT);
         }
 
-        Long userId = (Long) redisUtil.get("oauth_state:" + state);
+        Long userId = (Long) object;
+
+        redisUtil.delete("oauth_state:" + state);
 
         // 发送 http 请求
         HttpHeaders headers = new HttpHeaders();
@@ -93,34 +102,50 @@ public class UserServiceImpl implements UserService {
         // 接收响应
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
-        Map response = restTemplate.postForObject(tokenUrl, request, Map.class);
+        Map<String, Object> response;
+        try {
+            response = restTemplate.postForObject(tokenUrl, request, Map.class);
+        } catch (RestClientException e) {
+            throw new BusinessException(ResultEnum.ESI_TOKEN_REQUEST_ERROR);
+        }
 
-        if (response == null || !response.containsKey("access_token")) {
-            log.warn("【token 无效】{}", request);
-            return ResponseEntity.status(500).body("error");
+        if (response == null || !response.containsKey("access_token") || response.get("access_token") == null) {
+            throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
         String accessToken = (String) response.get("access_token");
         redisUtil.set("user_esi_access_token_" + userId, accessToken, accessTokenExpire);
         String refreshToken = (String) response.get("refresh_token");
         redisUtil.set("user_esi_refresh_token_" + userId, refreshToken, refreshTokenExpire);
+
         User user = userMapper.selectById(userId);
+
+        if (user == null) {
+            throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
+        }
+
         user.setEsiRefreshToken(refreshToken);
         userMapper.updateById(user);
 
-        // 记录日志, 返回响应
-        log.info("ESI 登录成功");
-        return ResponseEntity.ok(accessToken);
+        return ResponseEntity.ok(Result.success(accessToken));
     }
 
     @Override
-    public ResponseEntity<Result<Void>> refreshESIToken(Long userId) {
-        // 记录日志
-        log.info("【esi token 刷新】");
+    public Result<Void> refreshESIToken(Long userId) {
 
         // 发送 http 请求
         User user = userMapper.selectById(userId);
+
+        if (user == null) {
+            throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
+        }
+
         String refreshToken = user.getEsiRefreshToken();
+
+        if (refreshToken == null) {
+            throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
@@ -132,28 +157,32 @@ public class UserServiceImpl implements UserService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
         // 接收响应
-        Map response = restTemplate.postForObject(tokenUrl, request, Map.class);
+        Map<String, Object> response;
+        try {
+            response = restTemplate.postForObject(tokenUrl, request, Map.class);
+        } catch (RestClientException e) {
+            throw new BusinessException(ResultEnum.ESI_TOKEN_REFRESH_ERROR);
+        }
 
-        if (response == null || !response.containsKey("access_token")) {
-            log.warn("【刷新失败】");
-            return ResponseEntity.status(500).body(Result.error());
+        if (response == null || !response.containsKey("access_token") || response.get("access_token") == null) {
+            throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
         // 存入 redis
         String accessToken = (String) response.get("access_token");
+        String newRefreshToken = (String) response.get("refresh_token");
         redisUtil.set("user_esi_access_token_" + userId, accessToken, accessTokenExpire);
-        redisUtil.set("user_refresh_token_" + userId, refreshToken, refreshTokenExpire);
-        refreshToken = (String) response.get("refresh_token");
-        user.setEsiRefreshToken(refreshToken);
+        redisUtil.set("user_esi_refresh_token_" + userId, newRefreshToken, refreshTokenExpire);
+        user.setEsiRefreshToken(newRefreshToken);
         userMapper.updateById(user);
 
         // 记录日志, 返回响应
         log.info("【刷新成功】");
-        return ResponseEntity.ok(Result.success());
+        return Result.success();
     }
 
     @Override
-    public ResponseEntity<Result<EVECharacterResp>> characterInfo(Long userId) {
+    public Result<EVECharacterResp> characterInfo(Long userId) {
         // 记录日志
         log.info("【获取角色】");
 
@@ -162,30 +191,41 @@ public class UserServiceImpl implements UserService {
         String accessToken = (String) redisUtil.get("user_esi_access_token_" + userId);
 
         if (accessToken == null) {
-            log.warn("【token 无效】");
-            return ResponseEntity.status(500).body(Result.error());
+            throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
         headers.setBearerAuth(accessToken);
 
         // 接收响应
-        ResponseEntity<EVECharacter> response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), EVECharacter.class);
+        ResponseEntity<EVECharacter> response;
+        try {
+            response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), EVECharacter.class);
+        } catch (RestClientException e) {
+            throw new BusinessException(ResultEnum.ESI_USER_INFO_ERROR);
+        }
 
         if (response.getBody() == null) {
-            log.warn("【角色不存在】");
-            return ResponseEntity.status(500).body(Result.error());
+            throw new BusinessException(ResultEnum.ESI_USER_INFO_ERROR);
         }
 
         // 角色存入数据库
-        EVECharacter eveCharacter = response.getBody();
-        eveCharacter.setUserId(userId);
-        eveCharacterMapper.insert(eveCharacter);
+        EVECharacter newEVECharacter = response.getBody();
+        newEVECharacter.setUserId(userId);
+
+        EVECharacter oldEVECharacter = eveCharacterMapper.selectOne(new QueryWrapper<EVECharacter>().eq("character_name", newEVECharacter.getCharacterName()));
+
+        if (oldEVECharacter == null) {
+            eveCharacterMapper.insert(newEVECharacter);
+        } else {
+            newEVECharacter.setCharacterId(oldEVECharacter.getCharacterId());
+            eveCharacterMapper.updateById(newEVECharacter);
+        }
 
         EVECharacterResp eveCharacterResp = new EVECharacterResp();
-        BeanUtils.copyProperties(eveCharacter, eveCharacterResp);
+        BeanUtils.copyProperties(newEVECharacter, eveCharacterResp);
 
         // 记录日志, 返回响应
         log.info("【查询成功】");
-        return ResponseEntity.ok(Result.success(eveCharacterResp));
+        return Result.success(eveCharacterResp);
     }
 }
