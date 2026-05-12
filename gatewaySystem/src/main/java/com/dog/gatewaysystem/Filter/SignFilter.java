@@ -29,8 +29,11 @@ public class SignFilter implements GlobalFilter, Ordered {
         HttpMethod method = request.getMethod();
         String path = request.getPath().value();
 
+        log.info("放暴力破解过滤器 | {} {}", method, path);
+
         // 其他路径放行
         if (!path.equals("/auth/login")) {
+            log.info("白名单放行 | {} {}", method, path);
             return chain.filter(exchange);
         }
 
@@ -38,6 +41,7 @@ public class SignFilter implements GlobalFilter, Ordered {
 
         // 检查是否次数过多
         if (redisUtil.isUsernameBlackList(username) >= 3) {
+            log.warn("错误次数过多，请稍后 | {} {}", method, path);
             return unauthorized(exchange);
         }
 
@@ -67,6 +71,6 @@ public class SignFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -100;
+        return -50;
     }
 }

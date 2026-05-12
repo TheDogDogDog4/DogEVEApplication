@@ -54,9 +54,13 @@ public class UserServiceImpl implements UserService {
     @Value("${eve.expire.refresh-token}")
     private long refreshTokenExpire;
 
+    private static final long DUPLICATE_EXPIRE = 5;
+
     @Override
     public RedirectView loginESI(Long userId) {
+        log.info("ESI 登录业务 | {}", userId);
         if (userId == null) {
+            log.warn("登录，用户不存在");
             throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
         }
 
@@ -68,19 +72,26 @@ public class UserServiceImpl implements UserService {
             // 发送 http 请求
             String url = authUrl + "?response_type=code" + "&client_id=" + clientId + "&redirect_uri=" + callbackUrl + "&scope=publicData" + "&state=" + state;
 
+            // 放重复提交
+            redisUtil.setDuplicateBlackList("/eve/login", userId, DUPLICATE_EXPIRE);
+            log.info("ESI 登录防重复提交已写入 | {}", userId);
+
             return new RedirectView(url);
         } catch (Exception e) {
+            log.warn("登录 API请求失败 | {}", authUrl);
             throw new BusinessException(ResultEnum.ESI_AUTH_REDIRECT_ERROR);
         }
     }
 
     @Override
     public ResponseEntity<?> callbackESI(String code, String state) {
+        log.info("callback 业务");
 
         Object object =  redisUtil.get("oauth_state:" + state);
 
         // 防 CSRF 攻击
         if (object == null) {
+            log.warn("识别码不合规 | {}", state);
             throw new BusinessException(ResultEnum.STATE_INCORRECT);
         }
 
@@ -106,10 +117,12 @@ public class UserServiceImpl implements UserService {
         try {
             response = restTemplate.postForObject(tokenUrl, request, Map.class);
         } catch (RestClientException e) {
+            log.warn("token API请求失败 | {}", tokenUrl);
             throw new BusinessException(ResultEnum.ESI_TOKEN_REQUEST_ERROR);
         }
 
         if (response == null || !response.containsKey("access_token") || response.get("access_token") == null) {
+            log.warn("ESI token 获取失败 callback");
             throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
@@ -120,29 +133,32 @@ public class UserServiceImpl implements UserService {
 
         User user = userMapper.selectById(userId);
 
-        if (user == null) {
-            throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
-        }
-
         user.setEsiRefreshToken(refreshToken);
         userMapper.updateById(user);
+
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/eve/callback", userId, DUPLICATE_EXPIRE);
+        log.info("ESI CALLBACK 防重复提交已写入 | {}", userId);
 
         return ResponseEntity.ok(Result.success(accessToken));
     }
 
     @Override
     public Result<Void> refreshESIToken(Long userId) {
+        log.info("ESI token 刷新业务 | {}", userId);
 
         // 发送 http 请求
         User user = userMapper.selectById(userId);
 
         if (user == null) {
+            log.warn("用户不存在");
             throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
         }
 
         String refreshToken = user.getEsiRefreshToken();
 
         if (refreshToken == null) {
+            log.warn("长期 token 不存在");
             throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
@@ -161,10 +177,12 @@ public class UserServiceImpl implements UserService {
         try {
             response = restTemplate.postForObject(tokenUrl, request, Map.class);
         } catch (RestClientException e) {
+            log.warn("token 刷新 API请求失败 | {}", tokenUrl);
             throw new BusinessException(ResultEnum.ESI_TOKEN_REFRESH_ERROR);
         }
 
         if (response == null || !response.containsKey("access_token") || response.get("access_token") == null) {
+            log.warn("ESI token 获取失败");
             throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
@@ -176,6 +194,10 @@ public class UserServiceImpl implements UserService {
         user.setEsiRefreshToken(newRefreshToken);
         userMapper.updateById(user);
 
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/eve/refresh", userId, DUPLICATE_EXPIRE);
+        log.info("ESI token 刷新防重复提交已写入 | {}", userId);
+
         // 记录日志, 返回响应
         log.info("【刷新成功】");
         return Result.success();
@@ -184,13 +206,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public Result<EVECharacterResp> characterInfo(Long userId) {
         // 记录日志
-        log.info("【获取角色】");
+        log.info("获取游戏角色信息 | {}", userId);
 
         // 发送 http 请求
         HttpHeaders headers = new HttpHeaders();
         String accessToken = (String) redisUtil.get("user_esi_access_token_" + userId);
 
         if (accessToken == null) {
+            log.warn("token 失效");
             throw new BusinessException(ResultEnum.ESI_TOKEN_INVALID_ERROR);
         }
 
@@ -201,10 +224,12 @@ public class UserServiceImpl implements UserService {
         try {
             response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), EVECharacter.class);
         } catch (RestClientException e) {
+            log.warn("角色信息获取 API请求失败 | {}", tokenUrl);
             throw new BusinessException(ResultEnum.ESI_USER_INFO_ERROR);
         }
 
         if (response.getBody() == null) {
+            log.warn("角色信息获取失败");
             throw new BusinessException(ResultEnum.ESI_USER_INFO_ERROR);
         }
 
@@ -223,6 +248,10 @@ public class UserServiceImpl implements UserService {
 
         EVECharacterResp eveCharacterResp = new EVECharacterResp();
         BeanUtils.copyProperties(newEVECharacter, eveCharacterResp);
+
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/eve/info", userId, DUPLICATE_EXPIRE);
+        log.info("ESI 角色信息获取防重复提交已写入 | {}", userId);
 
         // 记录日志, 返回响应
         log.info("【查询成功】");

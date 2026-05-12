@@ -34,8 +34,11 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
         String path = request.getPath().value();
         HttpMethod method = request.getMethod();
 
+        log.info("重复提交过滤器 | {} {}", method, path);
+
         // 白名单放行
         if (WHITE_LIST.contains(path)) {
+            log.info("白名单放行 | {} {}", method, path);
             return chain.filter(exchange);
         }
 
@@ -44,17 +47,21 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
 
             // 查询是否为重复提交
             if (redisUtil.isDuplicateBlackList(path, username)) {
+                log.warn("登录操作重复提交 {} {}", method, path);
                 return unauthorized(exchange);
             }
         } else {
             String userIdStr = request.getHeaders().getFirst("userId");
+
             Long userId = null;
+
             if (userIdStr != null) {
                 userId = Long.parseLong(userIdStr);
             }
 
             // 查询是否为重复提交
             if (redisUtil.isDuplicateBlackList(path, userId)) {
+                log.warn("操作重复提交 {} {}", method, path);
                 return unauthorized(exchange);
             }
         }
@@ -86,6 +93,6 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -40;
+        return 0;
     }
 }

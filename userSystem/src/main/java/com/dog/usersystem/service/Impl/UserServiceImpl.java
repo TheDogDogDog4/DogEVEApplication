@@ -18,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-
 // 用户操作业务实现类
 @Slf4j
 @Service
@@ -32,10 +31,15 @@ public class UserServiceImpl implements UserService {
 
     private static final int USERNAME_EXPIRE = 900;
 
+    private static final long DUPLICATE_EXPIRE = 5;
+
     @Override
     public Result<Void> registerUser(UserRegisterReq userRegisterReq) {
+        log.info("用户注册业务 | {}", userRegisterReq.getUsername());
+
         // 检查用户名是否存在
         if (userMapper.selectOne(new QueryWrapper<User>().eq("username", userRegisterReq.getUsername())) != null) {
+            log.warn("用户名已存在 | {}", userRegisterReq.getUsername());
             throw new BusinessException(ResultEnum.USERNAME_EXISTS);
         }
 
@@ -48,22 +52,31 @@ public class UserServiceImpl implements UserService {
         user.setPassword(newPassword);
         userMapper.insert(user);
 
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/auth/register", user.getUserId(), DUPLICATE_EXPIRE);
+        log.info("注册防重复提交已写入 | {}", user.getUserId());
+
         return Result.success();
     }
 
     @Override
     public Result<JwtTokenResp> loginUser(UserLoginReq userLoginReq) {
+        log.info("用户登录业务 | {}", userLoginReq.getUsername());
+
         // 查询用户名
         User user = userMapper.selectOne(new QueryWrapper<User>().eq("username", userLoginReq.getUsername()));
 
         // 检验用户有效性
         if (user == null) {
+            log.warn("用户不存在 | {}", userLoginReq.getUsername());
             throw new BusinessException(ResultEnum.USERNAME_NOT_EXITS);
         }
 
         // 检验密码(非明文)
         if (!passwordEncoder.matches(userLoginReq.getPassword(), user.getPassword())) {
+            log.warn("密码错误 | {}", userLoginReq.getPassword());
             redisUtil.setUsernameBlackList(userLoginReq.getUsername(), USERNAME_EXPIRE);
+            log.info("防暴力破解已写入 | {}", userLoginReq.getUsername());
             throw new BusinessException(ResultEnum.PASSWORD_INCORRECT);
         }
 
@@ -76,31 +89,44 @@ public class UserServiceImpl implements UserService {
         redisUtil.set("user_access_" + user.getUserId(), jwtTokenResp.getAccessToken(), JwtUtil.ACCESS_EXPIRE / 1000);
         redisUtil.set("user_refresh_" + user.getUserId(),  jwtTokenResp.getRefreshToken(), JwtUtil.REFRESH_EXPIRE / 1000);
 
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/auth/login", user.getUsername(), DUPLICATE_EXPIRE);
+        log.info("登录防重复提交已写入 | {}", user.getUsername());
+
         redisUtil.deleteUsernameBlackList(userLoginReq.getUsername());
         return Result.success(jwtTokenResp);
     }
 
     @Override
     public Result<Void> logoutUser(Long userId) {
+        log.info("用户登出业务 | {}", userId);
+
         // 查token
         String accessToken = (String) redisUtil.get("user_access_" + userId);
         String refreshToken = (String) redisUtil.get("user_refresh_" + userId);
 
         // token 加入黑名单
         if (accessToken != null) {
+            log.info("短期 token 加黑名单 | {}", userId);
             redisUtil.setBlackList(accessToken, JwtUtil.getRemainingExpireSeconds(accessToken));
             redisUtil.delete("user_access_" + userId);
         }
         if (refreshToken != null) {
+            log.info("长期 token 加黑名单 | {}", userId);
             redisUtil.setBlackList(refreshToken, JwtUtil.getRemainingExpireSeconds(refreshToken));
             redisUtil.delete("user_refresh_" + userId);
         }
+
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/auth/logout", userId, DUPLICATE_EXPIRE);
+        log.info("登出防重复提交已写入 | {}", userId);
 
         return Result.success();
     }
 
     @Override
     public Result<JwtTokenResp> refreshToken(Long userId) {
+        log.info("token 刷新业务 | {}", userId);
         String accessToken = JwtUtil.createAccessToken(userId);
         String refreshToken = JwtUtil.createRefreshToken(userId);
 
@@ -111,6 +137,10 @@ public class UserServiceImpl implements UserService {
         JwtTokenResp jwtTokenResp = new JwtTokenResp();
         jwtTokenResp.setAccessToken(accessToken);
         jwtTokenResp.setRefreshToken(refreshToken);
+
+        // 放重复提交
+        redisUtil.setDuplicateBlackList("/auth/refresh", userId, DUPLICATE_EXPIRE);
+        log.info("token 刷新防重复提交已写入 | {}", userId);
 
         return Result.success(jwtTokenResp);
     }

@@ -3,6 +3,7 @@ package com.Dog.Handler;
 import com.Dog.Doman.Result;
 import com.Dog.Doman.ResultEnum;
 import com.Dog.Exception.BusinessException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // 全局异常处理器
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -25,19 +27,22 @@ public class GlobalExceptionHandler {
             errors.put(field, err.getDefaultMessage());
         });
 
+        log.error("参数不合规错误 | {}", errors);
+
         return ResponseEntity.status(ResultEnum.PARAM_ERROR.getCode()).body(Result.error(ResultEnum.PARAM_ERROR.getCode(), ResultEnum.PARAM_ERROR.getMsg(), errors));
     }
 
     // 捕获业务逻辑异常
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Result<Void>> handleBusiness(BusinessException e) {
+        log.error("业务逻辑错误 | {}", e.getMessage());
         return ResponseEntity.status(ResultEnum.BUSINESS_ERROR.getCode()).body(Result.error(ResultEnum.BUSINESS_ERROR.getCode(), ResultEnum.BUSINESS_ERROR.getMsg()));
     }
 
     // 捕获全局异常
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Result<Void>> handleException(Exception e) {
-        e.printStackTrace();
+        log.error("服务器内部错误 | {}", e.getMessage());
         return ResponseEntity.status(ResultEnum.SYSTEM_ERROR.getCode()).body(Result.error(ResultEnum.SYSTEM_ERROR.getCode(), ResultEnum.SYSTEM_ERROR.getMsg()));
     }
 }

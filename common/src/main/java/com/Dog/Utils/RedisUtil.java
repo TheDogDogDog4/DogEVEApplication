@@ -87,4 +87,12 @@ public class RedisUtil {
     public Boolean isDuplicateBlackList(String path, String username) {
         return redisTemplate.opsForValue().get("duplicate_black_list" + path + username) != null;
     }
+
+    public void setDuplicateBlackList(String path, Long userId, long expireSeconds) {
+        redisTemplate.opsForValue().set("duplicate_black_list" + path + userId, expireSeconds);
+    }
+
+    public void setDuplicateBlackList(String path, String username, long expireSeconds) {
+        redisTemplate.opsForValue().set("duplicate_black_list" + path + username, expireSeconds);
+    }
 }

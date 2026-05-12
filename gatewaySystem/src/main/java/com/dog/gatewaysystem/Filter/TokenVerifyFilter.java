@@ -42,16 +42,18 @@ public class TokenVerifyFilter implements GlobalFilter, Ordered {
         HttpMethod method = request.getMethod();
 
         // 记录请求的类型和地址
-        log.info("【网关请求】{} {}", method, path);
+        log.info("鉴权过滤器 | {} {}", method, path);
 
         // 白名单直接放行
         if (WHITE_LIST.contains(path)) {
+            log.info("白名单放行 | {} {}", method, path);
             return chain.filter(exchange);
         }
 
         // 获取 accessToken
         String firstToken = request.getHeaders().getFirst("Authorization");
         if (firstToken == null || !firstToken.startsWith("Bearer ")) {
+            log.warn("请求未带正确请求头 | {} {} {}", method, path, firstToken);
             return unauthorized(exchange);
         }
 
@@ -59,6 +61,7 @@ public class TokenVerifyFilter implements GlobalFilter, Ordered {
 
         // 检验 accessToken 有效性, 排查是否进入黑名单
         if (!JwtUtil.verify(accessToken) || redisUtil.isBlackList(accessToken)) {
+            log.warn("token 不合规或已失效 | {} {}", method, path);
             return unauthorized(exchange);
         }
 
@@ -96,6 +99,6 @@ public class TokenVerifyFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -90;
+        return -100;
     }
 }

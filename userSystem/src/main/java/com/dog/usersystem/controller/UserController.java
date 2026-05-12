@@ -5,8 +5,8 @@ import com.dog.usersystem.doman.vo.req.UserLoginReq;
 import com.dog.usersystem.doman.vo.req.UserRegisterReq;
 import com.dog.usersystem.doman.vo.resp.JwtTokenResp;
 import com.dog.usersystem.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 // 用户操作控制类
@@ -20,13 +20,13 @@ public class UserController {
 
     // 注册接口
     @PostMapping("/register")
-    public Result<Void> registerUser(@RequestBody UserRegisterReq userRegisterReq) {
+    public Result<Void> registerUser(@Valid @RequestBody UserRegisterReq userRegisterReq) {
         return userService.registerUser(userRegisterReq);
     }
 
     // 登录接口
     @PostMapping("/login")
-    public Result<JwtTokenResp> loginUser(@RequestBody UserLoginReq userLoginReq) {
+    public Result<JwtTokenResp> loginUser(@Valid @RequestBody UserLoginReq userLoginReq) {
         return userService.loginUser(userLoginReq);
     }
 
