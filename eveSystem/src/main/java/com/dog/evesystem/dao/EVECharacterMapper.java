@@ -1,9 +1,9 @@
 package com.dog.evesystem.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.dog.evesystem.doman.dto.EVECharacter;
+import com.Dog.Doman.dto.postgreSQL.PgEVECharacter;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface EVECharacterMapper extends BaseMapper<EVECharacter> {
+public interface EVECharacterMapper extends BaseMapper<PgEVECharacter> {
 }

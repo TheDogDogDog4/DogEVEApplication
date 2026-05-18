@@ -20,7 +20,8 @@ public enum ResultEnum {
     ESI_TOKEN_REQUEST_ERROR(5003, "调用ESI获取令牌失败"),
     ESI_TOKEN_INVALID_ERROR(5004, "ESI令牌无效或为空"),
     ESI_TOKEN_REFRESH_ERROR(5005, "ESI令牌刷新失败"),
-    ESI_USER_INFO_ERROR(5006, "获取ESI角色信息失败");
+    ESI_USER_INFO_ERROR(5006, "获取ESI角色信息失败"),
+    ES_SYNC_ERROR(500, "同步用户信息到ES失败");
 
     private final int code;
     private final String msg;

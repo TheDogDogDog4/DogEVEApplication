@@ -42,7 +42,7 @@ public class DuplicateFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        if (path.equals("/auth/login")) {
+        if (path.equals("/auth/login") || path.equals("/auth/register")) {
             String username = request.getHeaders().getFirst("username");
 
             // 查询是否为重复提交

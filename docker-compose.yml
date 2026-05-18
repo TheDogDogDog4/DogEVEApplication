@@ -138,7 +138,7 @@ services:
   rocketmq-broker:
     image: apache/rocketmq:4.9.6
     container_name: rocketmq-broker
-    command: sh mqbroker -n rocketmq-namesrv:9876
+    command: sh mqbroker -n rocketmq-namesrv:9876 autoCreateTopicEnable=true
     environment:
       - NAMESRV_ADDR=rocketmq-namesrv:9876
       - JAVA_OPTS=-server -Xms256m -Xmx256m -Xmn128m

@@ -1,7 +1,7 @@
 package com.dog.evesystem.service;
 
 import com.Dog.Doman.Result;
-import com.dog.evesystem.doman.vo.resp.EVECharacterResp;
+import com.Dog.Doman.dto.resp.EVECharacterResp;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.view.RedirectView;
 

@@ -7,9 +7,8 @@ import com.Dog.Utils.RedisUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dog.evesystem.dao.EVECharacterMapper;
 import com.dog.evesystem.dao.UserMapper;
-import com.dog.evesystem.doman.dto.EVECharacter;
-import com.dog.evesystem.doman.dto.User;
-import com.dog.evesystem.doman.vo.resp.EVECharacterResp;
+import com.Dog.Doman.dto.postgreSQL.PgEVECharacter;
+import com.Dog.Doman.dto.resp.EVECharacterResp;
 import com.dog.evesystem.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -220,9 +219,9 @@ public class UserServiceImpl implements UserService {
         headers.setBearerAuth(accessToken);
 
         // 接收响应
-        ResponseEntity<EVECharacter> response;
+        ResponseEntity<PgEVECharacter> response;
         try {
-            response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), EVECharacter.class);
+            response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, new HttpEntity<>(headers), PgEVECharacter.class);
         } catch (RestClientException e) {
             log.warn("角色信息获取 API请求失败 | {}", tokenUrl);
             throw new BusinessException(ResultEnum.ESI_USER_INFO_ERROR);
@@ -234,10 +233,10 @@ public class UserServiceImpl implements UserService {
         }
 
         // 角色存入数据库
-        EVECharacter newEVECharacter = response.getBody();
+        PgEVECharacter newEVECharacter = response.getBody();
         newEVECharacter.setUserId(userId);
 
-        EVECharacter oldEVECharacter = eveCharacterMapper.selectOne(new QueryWrapper<EVECharacter>().eq("character_name", newEVECharacter.getCharacterName()));
+        PgEVECharacter oldEVECharacter = eveCharacterMapper.selectOne(new QueryWrapper<PgEVECharacter>().eq("character_name", newEVECharacter.getCharacterName()));
 
         if (oldEVECharacter == null) {
             eveCharacterMapper.insert(newEVECharacter);

@@ -2,17 +2,18 @@ package com.dog.usersystem.service.Impl;
 
 import com.Dog.Doman.Result;
 import com.Dog.Doman.ResultEnum;
+import com.Dog.Doman.dto.postgreSQL.PgUser;
 import com.Dog.Exception.BusinessException;
 import com.Dog.Utils.JwtUtil;
 import com.Dog.Utils.RedisUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dog.usersystem.dao.UserMapper;
-import com.dog.usersystem.doman.dto.User;
-import com.dog.usersystem.doman.vo.req.UserLoginReq;
-import com.dog.usersystem.doman.vo.req.UserRegisterReq;
-import com.dog.usersystem.doman.vo.resp.JwtTokenResp;
+import com.Dog.Doman.dto.req.UserLoginReq;
+import com.Dog.Doman.dto.req.UserRegisterReq;
+import com.Dog.Doman.dto.resp.JwtTokenResp;
 import com.dog.usersystem.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,35 +29,60 @@ public class UserServiceImpl implements UserService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private RedisUtil redisUtil;
+    @Autowired
+    private RocketMQTemplate rocketMQTemplate;
 
     private static final int USERNAME_EXPIRE = 900;
 
     private static final long DUPLICATE_EXPIRE = 5;
 
+    private static final long REGISTER_ING = 10;
+
     @Override
     public Result<Void> registerUser(UserRegisterReq userRegisterReq) {
+
+        String username = userRegisterReq.getUsername();
+        String password = userRegisterReq.getPassword();
+        String lockKey = "Registering" + username;
+
+        // 记录日志
         log.info("用户注册业务 | {}", userRegisterReq.getUsername());
 
-        // 检查用户名是否存在
-        if (userMapper.selectOne(new QueryWrapper<User>().eq("username", userRegisterReq.getUsername())) != null) {
-            log.warn("用户名已存在 | {}", userRegisterReq.getUsername());
+        // 抢锁
+        boolean lock = redisUtil.lock(lockKey, REGISTER_ING);
+
+        if (!lock) {
+            log.warn("用户正在注册中，请勿重复提交 | {}", username);
             throw new BusinessException(ResultEnum.USERNAME_EXISTS);
         }
 
-        // 密码加密
-        String newPassword = passwordEncoder.encode(userRegisterReq.getPassword());
+        try {
+            // 检查用户名是否存在
+            if (userMapper.selectOne(new QueryWrapper<PgUser>().eq("username", username)) != null) {
+                log.warn("用户名已存在 | {}", username);
+                throw new BusinessException(ResultEnum.USERNAME_EXISTS);
+            }
 
-        // 存入数据库
-        User user = new User();
-        BeanUtils.copyProperties(userRegisterReq, user);
-        user.setPassword(newPassword);
-        userMapper.insert(user);
+            // 密码加密
+            String newPassword = passwordEncoder.encode(password);
 
-        // 放重复提交
-        redisUtil.setDuplicateBlackList("/auth/register", user.getUserId(), DUPLICATE_EXPIRE);
-        log.info("注册防重复提交已写入 | {}", user.getUserId());
+            // 存入数据库
+            PgUser user = new PgUser();
+            BeanUtils.copyProperties(userRegisterReq, user);
+            user.setPassword(newPassword);
+            userMapper.insert(user);
 
-        return Result.success();
+            // 存数据到es（rocketMQ 消息）
+            rocketMQTemplate.convertAndSend("user-register-topic", user.getUserId());
+
+            // 防重复提交
+            redisUtil.setDuplicateBlackList("/auth/register", username, DUPLICATE_EXPIRE);
+            log.info("登录防重复提交已写入 | {}", username);
+
+            return Result.success();
+        } finally {
+            redisUtil.delete("Registering" + username);
+        }
     }
 
     @Override
@@ -64,7 +90,7 @@ public class UserServiceImpl implements UserService {
         log.info("用户登录业务 | {}", userLoginReq.getUsername());
 
         // 查询用户名
-        User user = userMapper.selectOne(new QueryWrapper<User>().eq("username", userLoginReq.getUsername()));
+        PgUser user = userMapper.selectOne(new QueryWrapper<PgUser>().eq("username", userLoginReq.getUsername()));
 
         // 检验用户有效性
         if (user == null) {

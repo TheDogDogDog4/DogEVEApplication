@@ -1,9 +1,9 @@
 package com.dog.usersystem.controller;
 
 import com.Dog.Doman.Result;
-import com.dog.usersystem.doman.vo.req.UserLoginReq;
-import com.dog.usersystem.doman.vo.req.UserRegisterReq;
-import com.dog.usersystem.doman.vo.resp.JwtTokenResp;
+import com.Dog.Doman.dto.req.UserLoginReq;
+import com.Dog.Doman.dto.req.UserRegisterReq;
+import com.Dog.Doman.dto.resp.JwtTokenResp;
 import com.dog.usersystem.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

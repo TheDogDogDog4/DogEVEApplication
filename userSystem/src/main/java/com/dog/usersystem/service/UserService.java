@@ -1,10 +1,9 @@
 package com.dog.usersystem.service;
 
 import com.Dog.Doman.Result;
-import com.dog.usersystem.doman.vo.req.UserLoginReq;
-import com.dog.usersystem.doman.vo.req.UserRegisterReq;
-import com.dog.usersystem.doman.vo.resp.JwtTokenResp;
-import org.springframework.http.ResponseEntity;
+import com.Dog.Doman.dto.req.UserLoginReq;
+import com.Dog.Doman.dto.req.UserRegisterReq;
+import com.Dog.Doman.dto.resp.JwtTokenResp;
 
 // 用户操作业务类
 public interface UserService {

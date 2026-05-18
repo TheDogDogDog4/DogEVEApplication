@@ -1,7 +1,7 @@
 package com.dog.evesystem.controller;
 
 import com.Dog.Doman.Result;
-import com.dog.evesystem.doman.vo.resp.EVECharacterResp;
+import com.Dog.Doman.dto.resp.EVECharacterResp;
 import com.dog.evesystem.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;

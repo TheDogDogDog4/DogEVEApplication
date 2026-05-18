@@ -20,6 +20,8 @@
         <module>eveSystem</module>
         <module>gatewaySystem</module>
         <module>common</module>
+        <module>elasticsearchSystem</module>
+        <module>aiSystem</module>
     </modules>
 
     <groupId>com.Dog</groupId>
